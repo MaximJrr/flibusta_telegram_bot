@@ -1,16 +1,28 @@
-# This is a sample Python script.
+from aiogram import Bot, Dispatcher, executor, types
 
-# Press Shift+F10 to execute it or replace it with your code.
-# Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
+from config import TOKEN_API
+
+bot = Bot(TOKEN_API)
+dp = Dispatcher(bot)
+
+HELP_COMMAND = '''
+/help - список команд
+/start - начать работу с ботом'''
 
 
-def print_hi(name):
-    # Use a breakpoint in the code line below to debug your script.
-    print(f'Hi, {name}')  # Press Ctrl+F8 to toggle the breakpoint.
+@dp.message_handler(commands=['start'])
+async def start_command(message: types.Message):
+    await message.answer(text="Привет! Этот бот скачивает книги с сайте 'flibusta.club'. Для скачивания"
+                              " напиши имя книги или интересующего автора ")
+    await message.delete()
 
 
-# Press the green button in the gutter to run the script.
+@dp.message_handler(commands=['help'])
+async def help_command(message: types.Message):
+    await message.answer(text=HELP_COMMAND)
+    await message.delete()
+
+
 if __name__ == '__main__':
-    print_hi('PyCharm')
+    executor.start_polling(dp)
 
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
