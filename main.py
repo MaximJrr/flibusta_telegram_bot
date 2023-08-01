@@ -1,48 +1,55 @@
-from aiogram import Bot, Dispatcher, executor, types
+import telebot
 import requests
-import logging
+from bs4 import BeautifulSoup
+from telebot.types import Message
 from config import TOKEN_API
-from keyboard import keyboard
+
+bot = telebot.TeleBot(TOKEN_API)
 
 
-logging.basicConfig(level=logging.INFO)
-bot = Bot(TOKEN_API)
-dp = Dispatcher(bot)
+def parser(book_name):
+    params = {'ask': book_name}
+    response = requests.get('https://flibusta.club/booksearch/', params=params).text
+    soup = BeautifulSoup(response, 'html.parser')
+    items = soup.find('div', {'id': 'main', 'class': 'clear-block'})
+    books = []
 
-HELP_COMMAND = '''
-/help - список команд
-/start - начать работу с ботом'''
-
-
-async def on_startup(_):
-    print('Бот запущен!')
-
-
-@dp.message_handler(commands=['start'])
-async def start_command(message: types.Message):
-    user = message.from_user
-    await message.answer(text=f"Привет, {user.first_name}! Этот бот скачивает книги с сайте 'flibusta.club'. Для скачивания"
-                              " напиши имя книги или интересующего автора ")
-    await message.delete()
+    if items:
+        book_links = items.find_all('a', href=True)
+        for link in book_links:
+            title = link.get_text().strip()
+            url = link['href']
+            books.append((title, url))
+    return books
 
 
-@dp.message_handler(commands=['help'])
-async def help_command(message: types.Message):
-    await message.answer(text=HELP_COMMAND, reply_markup=keyboard)
-    await message.delete()
+@bot.message_handler(commands=['start'])
+def start_command(message: Message):
+    bot.reply_to(message=message, text='Привет!')
 
 
-@dp.message_handler(content_types=types.ContentTypes.TEXT)
-async def search_book(message: types.Message):
-    pass
+@bot.message_handler(commands=['search'])
+def search_command(message: Message):
+    bot.send_message(message.chat.id, "Пожалуйста, укажите название книги или автора для поиска.")
 
 
-async def search_book_on_flibusta(book_name: str, page: int):
-    if requests.status_codes == 200:
-        params = {'ask': book_name}
-        response = requests.get("https://flibusta.club/booksearch", params=params)
+@bot.message_handler(content_types=['text'])
+def get_books(message: Message):
+    if message.text:
+        book_name = message.text.strip()
+        book_data = parser(book_name)
+        if book_data:
+            response_text = ""
+            for i, (title, url) in enumerate(book_data, start=1):
+                response_text += f"{i}. {title} - {url}\n"
+                if len(response_text) <= 405:
+                    bot.send_message(message.chat.id, response_text)
+                    response_text = ""
+            if response_text:
+                bot.send_message(message.chat.id, response_text)
+        else:
+            bot.send_message(message.chat.id, f"Книги с названием '{book_name}' не найдено.")
 
 
 if __name__ == '__main__':
-    executor.start_polling(dp, on_startup=on_startup, skip_updates=True)
-
+    bot.polling()
