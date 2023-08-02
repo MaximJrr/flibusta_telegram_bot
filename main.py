@@ -1,3 +1,5 @@
+from pydoc import html
+
 import telebot
 import requests
 from bs4 import BeautifulSoup
@@ -35,20 +37,24 @@ def search_command(message: Message):
 
 @bot.message_handler(content_types=['text'])
 def get_books(message: Message):
-    if message.text:
-        book_name = message.text.strip()
-        book_data = parser(book_name)
-        if book_data:
-            response_text = ""
-            for i, (title, url) in enumerate(book_data, start=1):
-                response_text += f"{i}. {title} - {url}\n"
-                if len(response_text) <= 405:
-                    bot.send_message(message.chat.id, response_text)
-                    response_text = ""
-            if response_text:
-                bot.send_message(message.chat.id, response_text)
-        else:
-            bot.send_message(message.chat.id, f"Книги с названием '{book_name}' не найдено.")
+    book_name = message.text.strip()
+    book_data = parser(book_name)
+    if book_data:
+        response_text = ""
+        for i, (title, url) in enumerate(book_data, start=0):
+            if title == 'Главная' and url == '//':
+                continue
+            else:
+                current_text = f"{i}. {html.escape(title)} - <a href='https://flibusta.club{url}'>{html.escape(url)}</a>\n"
+                if len(response_text) + len(current_text) <= 4096:
+                    response_text += current_text
+                else:
+                    bot.send_message(message.chat.id, response_text, parse_mode='HTML')
+                    response_text = current_text
+        if response_text:
+            bot.send_message(message.chat.id, response_text, parse_mode='HTML')
+    else:
+        bot.send_message(message.chat.id, f"Книги с названием '{book_name}' не найдено.")
 
 
 if __name__ == '__main__':
