@@ -25,6 +25,21 @@ def parser(book_name):
     return books
 
 
+def link_parser(link):
+    response = requests.get(link).text
+    soup = BeautifulSoup(response, 'html.parser')
+    links = []
+    link_elements = soup.find_all('span', class_='link')
+
+    for link in link_elements:
+        links.append(
+            {
+                link.text: link.get('onclick').split("'")[1]
+            }
+        )
+    return links
+
+
 @bot.message_handler(commands=['start'])
 def start_command(message: Message):
     bot.reply_to(message=message, text='Привет!')
@@ -55,6 +70,12 @@ def get_books(message: Message):
             bot.send_message(message.chat.id, response_text, parse_mode='HTML')
     else:
         bot.send_message(message.chat.id, f"Книги с названием '{book_name}' не найдено.")
+
+
+@bot.message_handler(content_types=['text'])
+def get_links(message: Message):
+    link = link_parser(message.text)
+    bot.send_message(message.chat.id, text=str(link))
 
 
 if __name__ == '__main__':
