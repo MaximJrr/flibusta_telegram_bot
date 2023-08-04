@@ -42,7 +42,7 @@ def link_parser(link):
 
 @bot.message_handler(commands=['start'])
 def start_command(message: Message):
-    bot.reply_to(message=message, text='Привет!')
+    bot.reply_to(message=message, text='Здравствуйте! Этот бот скачивает книги.')
 
 
 @bot.message_handler(commands=['search'])
