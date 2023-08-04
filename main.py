@@ -51,31 +51,32 @@ def search_command(message: Message):
 
 
 @bot.message_handler(content_types=['text'])
-def get_books(message: Message):
-    book_name = message.text.strip()
-    book_data = parser(book_name)
-    if book_data:
-        response_text = ""
-        for i, (title, url) in enumerate(book_data, start=0):
-            if title == 'Главная' and url == '//':
-                continue
-            else:
-                current_text = f"{i}. {html.escape(title)} - <a href='https://flibusta.club{url}'>{html.escape(url)}</a>\n"
-                if len(response_text) + len(current_text) <= 4096:
-                    response_text += current_text
-                else:
-                    bot.send_message(message.chat.id, response_text, parse_mode='HTML')
-                    response_text = current_text
-        if response_text:
-            bot.send_message(message.chat.id, response_text, parse_mode='HTML')
+def handle_text_message(message: Message):
+    if message.text.startswith("https://flibusta.club"):
+        # Если это ссылка на сайт, тогда вызываем функцию link_parser
+        links = link_parser(message.text)
+        # Отправляем результат работы функции в ответ пользователю
+        bot.send_message(message.chat.id, str(links))
     else:
-        bot.send_message(message.chat.id, f"Книги с названием '{book_name}' не найдено.")
-
-
-@bot.message_handler(content_types=['text'])
-def get_links(message: Message):
-    link = link_parser(message.text)
-    bot.send_message(message.chat.id, text=str(link))
+        # Если это не ссылка на сайт, тогда обрабатываем как текст и выполняем поиск книги
+        book_name = message.text.strip()
+        book_data = parser(book_name)
+        if book_data:
+            response_text = ""
+            for i, (title, url) in enumerate(book_data, start=0):
+                if title == 'Главная' and url == '//':
+                    continue
+                else:
+                    current_text = f"{i}. {html.escape(title)} - <a href='https://flibusta.club{url}'>{html.escape(url)}</a>\n"
+                    if len(response_text) + len(current_text) <= 4096:
+                        response_text += current_text
+                    else:
+                        bot.send_message(message.chat.id, response_text, parse_mode='HTML')
+                        response_text = current_text
+            if response_text:
+                bot.send_message(message.chat.id, response_text, parse_mode='HTML')
+            else:
+                bot.send_message(message.chat.id, f"Книги с названием '{book_name}' не найдено")
 
 
 if __name__ == '__main__':
