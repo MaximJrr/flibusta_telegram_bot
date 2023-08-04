@@ -10,12 +10,8 @@ bot = telebot.TeleBot(TOKEN_API)
 
 @bot.message_handler(commands=['start'])
 def start_command(message: Message):
-    bot.reply_to(message=message, text='Здравствуйте! Этот бот скачивает книги.')
-
-
-@bot.message_handler(commands=['search'])
-def search_command(message: Message):
-    bot.send_message(message.chat.id, "Пожалуйста, укажите название книги или автора для поиска.")
+    bot.send_message(message.chat.id, text=f'Здравствуйте, {message.from_user.first_name}! Этот бот скачивает книги. Напишите название книги, которую хотели бы скачать')
+    bot.delete_message(message.chat.id, message.id)
 
 
 @bot.message_handler(content_types=['text'])
